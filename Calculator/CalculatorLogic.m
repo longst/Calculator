@@ -5,9 +5,9 @@
 //  Created by Shitian Long on 7/1/12.
 //  Copyright (c) 2012 OptiCaller Software AB. All rights reserved.
 //
-
+// Again, unsure why you did not use his ioriginal code...
 #import "CalculatorLogic.h"
-#include <math.h>
+#include <math.h>   // Not really needed. All the necessary fucntions are part of foundation, in your .h include
 
 @interface CalculatorLogic()
 @property (nonatomic, strong)NSMutableArray *operandStack;
@@ -29,6 +29,10 @@
 }
 
 
+// No. Where is pushOperand?
+// In reality, this should be a double you push down, and...
+// [self.operandStack addObject:[NSNumber numberWithDouble:operand]];
+// Again, see what he did
 
 - (void)pushInStack:(NSString *)vaule{
     if (self.operandStack.count >= 2) {
@@ -41,17 +45,18 @@
 }
 
 
-
+// This assignment does not support replacing stuff on stack. You are not allowing for a true RPN calculator
 - (void)updateLastOperand:(NSString *)updatedValue{
     [self.operandStack replaceObjectAtIndex:(self.operandStack.count-1) withObject:updatedValue];
 }
 
-
+// Right idea, but wrong name - you are clearing the entire brain, not just an operand
 - (void)clearOperand{
     [self.operandStack removeAllObjects];
 }
 
 - (double)popOperand{
+    // This requires everything to be strings. Numbers can be stores as NSNumbers, and operations as strings, see his code
     NSString *valueInString = [self.operandStack lastObject];
     if (valueInString) {
         [self.operandStack removeLastObject];
@@ -59,7 +64,8 @@
     return [valueInString doubleValue];
 }
 
-
+// WAY overkill. The entire performOperation method I have, with comments, is < 30 lines. You have over 6 times as many
+// poor form
 - (NSString *)performOperationCos{
     double a = [self popOperand];
     double performResult = cos(a);
