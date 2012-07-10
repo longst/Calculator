@@ -11,26 +11,37 @@
 
 @interface CalculatorViewController ()
 
+@property (nonatomic) BOOL userHasEnteredAVariable;
 @property (nonatomic) BOOL userIsInTheMiddleOfEnteringANumber;
-@property (nonatomic, strong) CalculatorBrain *calLogic;
+@property (nonatomic, strong) CalculatorBrain *calculatorBrain;
+@property (nonatomic, strong) NSMutableDictionary *variables;
 
-- (void)displayHandlerWithoutEnter:(NSString *)operator;
+
 - (void)cleanDisplay;
+
 @end
 
 @implementation CalculatorViewController
 
 @synthesize display = _display;
-@synthesize inputDisplay = _log;
+@synthesize historyDisplay = _historyDisplay;
+@synthesize varDisplay = _varDisplay;
 @synthesize userIsInTheMiddleOfEnteringANumber = _userIsInTheMiddleOfEnteringANumber;
-@synthesize calLogic = _calLogic;
- 
+@synthesize userHasEnteredAVariable = _userHasEnteredAVariable;
+@synthesize calculatorBrain = _calculatorBrain;
+@synthesize variables = _variables;
 
-- (CalculatorBrain *)calLogic{
-    if (!_calLogic) {
-        _calLogic = [[CalculatorBrain alloc] init];
+- (CalculatorBrain *)calculatorBrain{
+    if (!_calculatorBrain) {
+        _calculatorBrain = [[CalculatorBrain alloc] init];
     }
-    return _calLogic;
+    return _calculatorBrain;
+}
+
+- (NSDictionary *)variables
+{
+    if (!_variables) _variables = [[NSMutableDictionary alloc] init];
+    return _variables;
 }
 
 - (void)viewDidLoad
@@ -42,7 +53,8 @@
 - (void)viewDidUnload
 {
     [self setDisplay:nil];
-    [self setInputDisplay:nil];
+    [self setHistoryDisplay:nil];
+    [self setVarDisplay:nil];
     [super viewDidUnload];
     // Release any retained subviews of the main view.
 }
@@ -59,7 +71,7 @@
                                           otherButtonTitles:nil];
     [error show];
     self.display.text = [NSString stringWithString:@""];
-    self.inputDisplay.text = [NSString stringWithString:@""];
+    self.historyDisplay.text = [NSString stringWithString:@""];
 }
 
 
@@ -68,23 +80,25 @@
 - (IBAction)digitPressed:(UIButton *)sender {
     NSString *digitPressed = [NSString stringWithFormat:@"%d", sender.tag];
     
-    // Handle Dot
-    if (sender.tag == DIGIT_DOT && [self.display.text rangeOfString:@"."].location == NSNotFound){
-        
+    if (!self.userIsInTheMiddleOfEnteringANumber) {
+        self.userIsInTheMiddleOfEnteringANumber = YES;
+        self.display.text = digitPressed;
     }
-    
-    // Handle Number
-    else if(sender.tag >= 0 && sender.tag <= 9){
-        if (!self.userIsInTheMiddleOfEnteringANumber) {
-            self.userIsInTheMiddleOfEnteringANumber = YES;
-            self.display.text = digitPressed;
-        }
-        else{
-           self.display.text = [self.display.text stringByAppendingString:digitPressed]; 
-        }
-        
+    else{
+        self.display.text = [self.display.text stringByAppendingString:digitPressed]; 
     }
 
+}
+
+- (IBAction)variablesPressed:(UIButton *)sender {
+    self.userHasEnteredAVariable = YES;
+    
+    if (self.userIsInTheMiddleOfEnteringANumber) {
+        [self enterPressed];
+    }
+    
+    [self.calculatorBrain pushVariable:sender.currentTitle];
+    self.historyDisplay.text = [CalculatorBrain descriptionOfProgram:self.calculatorBrain.program];
 }
 
 - (IBAction)dicimalPressd {
@@ -101,32 +115,86 @@
 }
 
 
-
-- (IBAction)operationPressed:(UIButton *)sender {    
+// initial var values  
+- (IBAction)initVar:(UIButton *)sender {
+    double test_1_x = 1.1;
+    double test_1_y = 2.2;
+    double test_2_x = 3.3;
+    double test_2_y = 4.4;
     
-    if (self.userIsInTheMiddleOfEnteringANumber) {
-        [self enterPressed];
+    NSDictionary *varDic;
+    
+    switch (sender.tag) {
+        case VAR_TEST_1:{
+            [self updateVarDisplay:test_1_x Y:test_1_y];
+            varDic = [NSDictionary dictionaryWithObjectsAndKeys:
+                      @"x", [NSNumber numberWithDouble:test_1_x],
+                      @"y", [NSNumber numberWithDouble:test_1_y],
+                      nil];
+            break;
+        }
+            
+        case VAR_TEST_2:{
+            [self updateVarDisplay:test_2_x Y:test_2_y];
+            varDic = [NSDictionary dictionaryWithObjectsAndKeys:
+                      @"x", [NSNumber numberWithDouble:test_2_x],
+                      @"y", [NSNumber numberWithDouble:test_2_y],
+                      nil];
+            break;
+        }
+            
+        case VAR_TEST_NULL:{
+            [self updateVarDisplay:0.0 Y:0.0];
+            varDic = [NSDictionary dictionaryWithObjectsAndKeys:
+                      @"x", [NSNumber numberWithDouble:0.0],
+                      @"y", [NSNumber numberWithDouble:0.0],
+                      nil];
+            break;
+        }
+            
+            
+        default:
+            break;
     }
-    double result = [self.calLogic performOperation:sender.tag];
     
-    self.display.text = [NSString stringWithFormat:@"%g", result];
+    for (id key in self.variables)
+    {
+        NSString *var = [NSString stringWithFormat:@" %@=%@", key, [self.variables objectForKey:key]];
+        self.varDisplay.text = [self.varDisplay.text stringByAppendingString:var];
+    }
     
-    self.inputDisplay.text = [NSString stringWithFormat:@"%@ %@"
-                              , self.inputDisplay.text
-                              , [self.calLogic getOperator:sender.tag]
-                              ];
-    // Handle Log
-    if (self.display.text.length == 0) {
-        self.inputDisplay.text = [NSString stringWithString:@""];
+    
+}
+
+
+- (void)updateVarDisplay:(double)var_x Y:(double)var_y{
+    NSString *varDisplayContent = [NSString stringWithFormat: @"X = %g , Y = %g"
+                                   ,var_x
+                                   ,var_y];
+    self.varDisplay.text = varDisplayContent;
+}
+
+- (IBAction)operationPressed:(UIButton *)sender {
+    
+    CAL_OPERATOR cal_oper = sender.tag;
+    
+    if (cal_oper != OPER_PI && cal_oper != OPER_OPT_SIGN && self.userIsInTheMiddleOfEnteringANumber)
+    {
+        [self enterPressed];
+    } else if (cal_oper == OPER_OPT_SIGN && self.userIsInTheMiddleOfEnteringANumber) {
+        self.display.text = [NSString stringWithFormat:@"%g", [self.display.text doubleValue] * -1];
         return;
     }
-    else {
-        self.inputDisplay.text = [NSString stringWithFormat:@"%@ %@ %@"
-                         ,self.inputDisplay.text
-                         ,@"="
-                         ,self.display.text];
-    }    
-    //push result in stack
+    if (self.userHasEnteredAVariable)
+    {
+        [self.calculatorBrain pushVariable:sender.currentTitle];
+        self.display.text = [NSString stringWithFormat:@"%g", [CalculatorBrain runProgram:self.calculatorBrain.program usingVariableValues:self.variables.copy]];
+    } else {
+        self.display.text = [NSString stringWithFormat:@"%g", [self.calculatorBrain performOperation:cal_oper]];
+    }
+    
+    self.historyDisplay.text = [CalculatorBrain descriptionOfProgram:self.calculatorBrain.program];
+    self.userIsInTheMiddleOfEnteringANumber = NO;
 }
 
 
@@ -138,40 +206,51 @@
     }
     
     //Handle UI
-    self.inputDisplay.text = [NSString stringWithFormat:@"%@ %@ "
-                              ,self.inputDisplay.text
-                              ,self.display.text];
+    self.historyDisplay.text = [CalculatorBrain descriptionOfProgram:self.calculatorBrain.program];
     
-    //Handle logic
-    [self.calLogic pushOperand:[self.display.text doubleValue]];
+    //Handle Display
+    [self.calculatorBrain pushOperand:[self.display.text doubleValue]];
 }
 
 
 - (IBAction)funcPressed:(UIButton *)sender {
     
-    self.userIsInTheMiddleOfEnteringANumber = NO;
+   
     
     switch (sender.tag) {
         case FUNC_BACKWARD:{
-            
-            [self.calLogic pushOperand:[self.display.text doubleValue]];
-            //Handle UI
-            if ([self.display.text length] > 0){
-                self.display.text = [self.display.text substringToIndex:[self.display.text length] - 1];
+            if (self.userIsInTheMiddleOfEnteringANumber)
+            {
+                self.display.text = [self.display.text substringToIndex:(self.display.text.length - 1)];
+                if (self.display.text.length == 0)
+                {
+                    self.display.text = @"0";
+                    self.userIsInTheMiddleOfEnteringANumber = NO;
+                }
+            } else {
+                [self.calculatorBrain removeLastItem];
+                self.historyDisplay.text = [CalculatorBrain descriptionOfProgram:self.calculatorBrain.program];
+                if (self.userHasEnteredAVariable)
+                {
+                    self.display.text = [NSString stringWithFormat:@"%g", [CalculatorBrain runProgram:self.calculatorBrain.program usingVariableValues:self.variables.copy]];
+                } else {
+                    self.display.text = [NSString stringWithFormat:@"%g", [CalculatorBrain runProgram:self.calculatorBrain.program]];
+                }
             }
             
-            //Handle logic
-            [self.calLogic updateLastOperand: self.display.text];
             break;
         }
             
         case FUNC_CLEAR:{
+             self.userIsInTheMiddleOfEnteringANumber = NO;
+            
             //Handl UI
-            self.display.text = [NSString stringWithString:@""];
-            self.inputDisplay.text = [NSString stringWithString:@""];
+            self.display.text = @"";
+            self.historyDisplay.text = @"";
+            self.varDisplay.text = @"";
             
             //Handle logic
-            [self.calLogic clearBrain];
+            [self.calculatorBrain clearBrain];
             break;
         }          
         default:
