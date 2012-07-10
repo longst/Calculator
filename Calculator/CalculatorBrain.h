@@ -34,12 +34,32 @@ typedef enum{
 
 @interface CalculatorBrain : NSObject
 
+
+@property (readonly) id program;
+
 - (void)pushOperand:(double)vaule;
-- (double)performOperation:(CAL_OPERATOR)op;
+- (void)pushVariable:(NSString *)variable;
+
 - (void)clearBrain;
 
+- (double)performOperation:(CAL_OPERATOR)op;
 
-- (void)updateLastOperand:(NSString *)updatedValue;
+- (NSString *)getOperator:(CAL_OPERATOR)op;
+- (void)removeLastItem;
+
+
++ (double)runProgram:(id)program usingVariableValues:(NSDictionary *)variableValues;
+
+// run program without variable
++ (double)runProgram:(id)program;
+
+
++ (NSString *)descriptionOfProgram:(id)program;
+
+
++ (NSSet *)variablesUsedInProgram:(id)program;
+
+
 
 
 @end

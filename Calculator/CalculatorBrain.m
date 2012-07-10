@@ -9,135 +9,299 @@
 #import "CalculatorBrain.h"
 
 @interface CalculatorBrain()
-@property (nonatomic, strong)NSMutableArray *operandStack;
+@property (nonatomic, strong) NSMutableArray *programStack;
 
-- (double)popOperand;
++ (BOOL)isOperation:(NSString *)operation;
++ (BOOL)isFunction:(NSString *)inString;
+
 
 @end
 
 @implementation CalculatorBrain
 
-@synthesize operandStack = _operandStack;
+@synthesize programStack = _programStack;
 
 
-- (NSMutableArray *)operandStack{
-    if (!_operandStack) {
-        _operandStack = [[NSMutableArray alloc] init];
+- (id)program{
+    return [self.programStack copy];
+}
+
+
+- (NSMutableArray *)programStack{
+    if (!_programStack) {
+        _programStack = [[NSMutableArray alloc] init];
     }
-    return _operandStack;
+    return _programStack;
+}
+
+- (void)pushVariable:(NSString *)variable
+{
+    [self.programStack addObject:variable];
 }
 
 
 - (void)pushOperand:(double)vaule{
-    [self.operandStack addObject:[NSNumber numberWithDouble:vaule]];
+    [self.programStack addObject:[NSNumber numberWithDouble:vaule]];
 }
+
+
 
 
 - (void)clearBrain{
-    [self.operandStack removeAllObjects];
+    [self.programStack removeAllObjects];
 }
 
-- (double)popOperand{
-    NSString *valueInString = [self.operandStack lastObject];
-    if (valueInString) {
-        [self.operandStack removeLastObject];
+
+
+
++ (double)runProgram:(id)program usingVariableValues:(NSDictionary *)variableValues{
+    
+    NSMutableArray *stack;
+    NSMutableArray *newStack = [[NSMutableArray alloc] init];
+    if ([program isKindOfClass:[NSArray class]])
+    {
+        stack = [program mutableCopy];
     }
-    return [valueInString doubleValue];
+    for (id stackItem in stack)
+    {
+        if ([stackItem isKindOfClass:[NSString class]])
+        {
+            NSString *string = (NSString *)stackItem;
+            if (![self isOperation:string] && ![self isFunction:string])
+            {
+                if ([variableValues objectForKey:stackItem])
+                {
+                    [newStack addObject:(NSNumber *)[variableValues objectForKey:stackItem]];
+                } else {
+                    [newStack addObject:[NSNumber numberWithInt:0]];
+                }
+            } else {
+                [newStack addObject:stackItem];
+            }
+        } else {
+            [newStack addObject:stackItem];
+        }
+    }
+    
+    return [self popOperandOfStack:newStack];
+    
+}
+
++ (BOOL) isFunction:(NSString *)inString
+{
+    if ([inString isEqualToString:@"sin"] || [inString isEqualToString:@"cos"] || [inString isEqualToString:@"sqrt"])
+    {
+        return YES;
+    }
+    
+    return NO;
 }
 
 
-- (double)performOperation:(CAL_OPERATOR)op{
-    double result = 0.0;
-    switch (op) {
-        case OPER_COS:{
-            result = cos([self popOperand]);
-            break;
++ (NSString *)descriptionOfProgram:(id)program{
+    NSMutableArray *infixExpression = [[NSMutableArray alloc] init];
+    
+    for (NSObject *stackItem in program)
+    {
+        if ([stackItem isKindOfClass:[NSNumber class]])
+        {
+            [infixExpression addObject:stackItem];
+        } else if ([stackItem isKindOfClass:[NSString class]]) {
+            NSString *string = (NSString *)stackItem;
+            if ([self isOperation:string]) {
+                id operand1 = [infixExpression lastObject];
+                if (operand1) [infixExpression removeLastObject];
+                id operand2 = [infixExpression lastObject];
+                if (operand2) [infixExpression removeLastObject];
+                id nextItem = [infixExpression lastObject];
+                if (nextItem)
+                {
+                    [infixExpression addObject:[NSString stringWithFormat:@"(%@ %@ %@)", operand2, string, operand1]];
+                    
+                } else {
+                    [infixExpression addObject:[NSString stringWithFormat:@"%@ %@ %@", operand2, string, operand1]];
+                }
+            } else if ([self isFunction:string]) {
+                id operand1 = [infixExpression lastObject];
+                if (operand1) [infixExpression removeLastObject];
+                [infixExpression addObject:[NSString stringWithFormat:@"%@(%@)", string, operand1]];
+            } else {
+                [infixExpression addObject:stackItem];
+            }
         }
-            
-        case OPER_DIVIDE:{
-            double divisor = [self popOperand];
+    }
+    
+    return [infixExpression componentsJoinedByString:@", "];
+}
+
+
++ (double)runProgram:(id)program{
+    NSMutableArray *stack;
+    if ([program isKindOfClass:[NSArray class]]) {
+        stack = [program mutableCopy];
+    }
+    return [self popOperandOfStack:stack];
+    
+}
+
+
+
++ (double)popOperandOfStack:(NSMutableArray*) stack{
+    double result = 0;
+    
+    id topOfStack = [stack lastObject];
+    if (topOfStack) {
+        [stack removeLastObject];
+    }
+    
+    if ([topOfStack isKindOfClass:[NSNumber class]]) {
+        result = [topOfStack doubleValue];
+    }
+    else if ([topOfStack isKindOfClass:[NSString class]]){
+        
+        NSString *operation = topOfStack;
+        
+        if ([operation isEqualToString:@"cos"]) {
+            result = cos([self popOperandOfStack:stack] * M_PI / 180);
+        }
+        else if ([operation isEqualToString:@"/"]) {
+            double divisor = [self popOperandOfStack:stack];
             if (divisor == 0) {
-                [self clearBrain];
+                //[self clearBrain];
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"RPN_ERROR" object:nil];
             }
             else{
-                result = [self popOperand] / divisor;
+                result = [self popOperandOfStack:stack] / divisor;
             }
-            
-            break;
         }
-            
-        case OPER_E:{
-            result = exp([self popOperand]);
-            break;
+        
+        else if ([operation isEqualToString:@"e"]) {
+            result = exp([self popOperandOfStack:stack]);
         }
-            
-        case OPER_LOG:{
-            double based = [self popOperand];
+        
+        else if ([operation isEqualToString:@"log"]) {
+            double based = [self popOperandOfStack:stack];
             if (based < 0) {
-                [self clearBrain];
+                //[self clearBrain];
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"RPN_ERROR" object:nil];
             }
             else {
                 result = log(based);
             }
-            break;
         }
-            
-        case OPER_MINUS:{
-            result = -[self popOperand] + [self popOperand];
-            break;
+        
+        else if ([operation isEqualToString:@"-"]) {
+            result = -[self popOperandOfStack:stack] + [self popOperandOfStack:stack];
         }
-            
-        case OPER_MUTIPLY:{
-            result = [self popOperand] * [self popOperand];
-            break;
+        
+        else if ([operation isEqualToString:@"*"]) {
+            result = [self popOperandOfStack:stack] * [self popOperandOfStack:stack];
         }
-            
-        case OPER_OPT_SIGN:{
-            result = -[self popOperand];
+        
+        else if ([operation isEqualToString:@"+/-"]) {
+            result = -[self popOperandOfStack:stack];
         }
-            
-        case OPER_PI:{
+        
+        else if ([operation isEqualToString:@"pi"]) {
             result = M_PI;
-            break;
         }
-            
-        case OPER_PLUS:{
-            result = [self popOperand] + [self popOperand];
-            break;
+        
+        else if ([operation isEqualToString:@"+"]) {
+            result = [self popOperandOfStack:stack] + [self popOperandOfStack:stack];
         }
-            
-        case OPER_SIN:{
-            result = sin([self popOperand]);
-            break;
+        
+        else if ([operation isEqualToString:@"sin"]) {
+            result = sin([self popOperandOfStack:stack] * M_PI / 180);
         }
-            
-        case OPER_SQIT:{
-            double based = [self popOperand];
+        
+        else if ([operation isEqualToString:@"sqit"]) {
+            double based = [self popOperandOfStack:stack];
             if (based < 0) {
-                [self clearBrain];
+                //[self clearBrain];
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"RPN_ERROR" object:nil];
             }
             else {
                 result = sqrt(based);
             }
-            break;
         }
-            
-        default:
-            break;
+        
     }
     
-    [self pushOperand:result];
     return result;
 }
 
-
-- (void)updateLastOperand:(NSString *)updatedValue{
-    [self.operandStack replaceObjectAtIndex:(self.operandStack.count-1) withObject:updatedValue];
+- (double)performOperation:(CAL_OPERATOR)op{    
+    [self.programStack addObject:[self getOperator:op]];
+    
+    return [[self class] runProgram:self.program];
 }
 
+
+
+
+- (NSString *)getOperator:(CAL_OPERATOR)op{
+    NSDictionary *operatorDic = [NSDictionary dictionaryWithObjectsAndKeys:
+                                 @"cos", [NSNumber numberWithInt:OPER_COS],
+                                 @"/", [NSNumber numberWithInt:OPER_DIVIDE],
+                                 @"e", [NSNumber numberWithInt:OPER_E],
+                                 @"log", [NSNumber numberWithInt:OPER_LOG],
+                                 @"-", [NSNumber numberWithInt:OPER_MINUS],
+                                 @"*", [NSNumber numberWithInt:OPER_MUTIPLY],
+                                 @"+/-", [NSNumber numberWithInt:OPER_OPT_SIGN],
+                                 @"pi", [NSNumber numberWithInt:OPER_PI],
+                                 @"+", [NSNumber numberWithInt:OPER_PLUS],
+                                 @"sin", [NSNumber numberWithInt:OPER_SIN],
+                                 @"sqit",[NSNumber numberWithInt:OPER_SQIT],
+                                 nil];
+    
+    NSString *operator = [operatorDic objectForKey:[NSNumber numberWithInt:op]];
+    
+    return operator;
+}
+
+
+
++ (BOOL) isOperation:(NSString *)inString
+{
+    if ([inString isEqualToString:@"+"] || [inString isEqualToString:@"-"] || [inString isEqualToString:@"*"] || [inString isEqualToString:@"/"])
+    {
+        return YES;
+    }
+    
+    return NO;
+}
+
+
++ (NSSet *)variablesUsedInProgram:(id)program
+{
+    NSArray *stack = (NSArray *)program;
+    NSMutableSet *v = [[NSMutableSet alloc] init];
+    for (id stackItem in stack)
+    {
+        if ([stackItem isKindOfClass:[NSString class]])
+        {
+            NSString *string = (NSString *)stackItem;
+            if (![self isOperation:string] && ![self isFunction:string])
+            {
+                [v addObject:string];
+            }
+        }
+    }
+    if ([v count] == 0)
+    {
+        return nil;
+    } else {
+        return [v copy];
+    }
+}
+
+- (void)removeLastItem
+{
+    if ([self.programStack count] > 0)
+    {
+        [self.programStack removeLastObject];
+    }
+}
 
 
 
