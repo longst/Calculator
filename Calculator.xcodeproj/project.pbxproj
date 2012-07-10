@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FA690F7615A0D41A0030B5A7 /* CalculatorLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = FA690F7515A0D41A0030B5A7 /* CalculatorLogic.m */; };
+		FA690F7615A0D41A0030B5A7 /* CalculatorBrain.m in Sources */ = {isa = PBXBuildFile; fileRef = FA690F7515A0D41A0030B5A7 /* CalculatorBrain.m */; };
 		FA9042EB159F3B3000F55959 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA9042EA159F3B3000F55959 /* UIKit.framework */; };
 		FA9042ED159F3B3000F55959 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA9042EC159F3B3000F55959 /* Foundation.framework */; };
 		FA9042EF159F3B3000F55959 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA9042EE159F3B3000F55959 /* CoreGraphics.framework */; };
@@ -19,8 +19,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		FA690F7415A0D41A0030B5A7 /* CalculatorLogic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CalculatorLogic.h; sourceTree = "<group>"; };
-		FA690F7515A0D41A0030B5A7 /* CalculatorLogic.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CalculatorLogic.m; sourceTree = "<group>"; };
+		FA690F7415A0D41A0030B5A7 /* CalculatorBrain.h */ = {isa = PBXFileReference; fileEncoding = 4; path = CalculatorBrain.h; sourceTree = "<group>"; };
+		FA690F7515A0D41A0030B5A7 /* CalculatorBrain.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CalculatorBrain.m; sourceTree = "<group>"; };
 		FA9042E6159F3B3000F55959 /* Calculator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Calculator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA9042EA159F3B3000F55959 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		FA9042EC159F3B3000F55959 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -86,8 +86,8 @@
 				FA9042FF159F3B3000F55959 /* CalculatorViewController.h */,
 				FA904300159F3B3000F55959 /* CalculatorViewController.m */,
 				FA9042F1159F3B3000F55959 /* Supporting Files */,
-				FA690F7415A0D41A0030B5A7 /* CalculatorLogic.h */,
-				FA690F7515A0D41A0030B5A7 /* CalculatorLogic.m */,
+				FA690F7415A0D41A0030B5A7 /* CalculatorBrain.h */,
+				FA690F7515A0D41A0030B5A7 /* CalculatorBrain.m */,
 			);
 			path = Calculator;
 			sourceTree = "<group>";
@@ -170,7 +170,7 @@
 				FA9042F7159F3B3000F55959 /* main.m in Sources */,
 				FA9042FB159F3B3000F55959 /* CalculatorAppDelegate.m in Sources */,
 				FA904301159F3B3000F55959 /* CalculatorViewController.m in Sources */,
-				FA690F7615A0D41A0030B5A7 /* CalculatorLogic.m in Sources */,
+				FA690F7615A0D41A0030B5A7 /* CalculatorBrain.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
