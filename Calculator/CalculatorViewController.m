@@ -9,6 +9,10 @@
 #import "CalculatorViewController.h"
 #import "CalculatorLogic.h"
 
+// Unsure why you are not just updating what the walkthrough wa with the added code. I thought that was the assignment.
+// However, you seem to have rewritten the whole thing!
+
+// Doing the enums seems like overkill for this project, but it is clean
 typedef enum{
     OPER_PLUS=1,
     OPER_MINUS,
@@ -61,6 +65,7 @@ typedef enum{
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    // I like the use of notificationm center for errors, although overkill for the homework
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(cleanDisplay) name:@"RPN_ERROR" object:nil];
 	// Do any additional setup after loading the view, typically from a nib.
 }
@@ -77,6 +82,10 @@ typedef enum{
 // If user put more than two operands in stack, RPM calculator does not support, prompt error
 // or minus number with sqrt
 // divided by zero
+
+// More than 2 are definitely allowed. You can put as many as you want in. This is a big error. For example:
+// 5 E 4 E 3 E 2 +
+// should show 5, another + would add the 4, then another + the 1st 5...
 - (void)cleanDisplay{
     UIAlertView *error = [[UIAlertView alloc] initWithTitle:@"Error"
                                                     message:@"There is an error occur" 
@@ -84,8 +93,8 @@ typedef enum{
                                           cancelButtonTitle:@"OK" 
                                           otherButtonTitles:nil];
     [error show];
-    self.display.text = [NSString stringWithString:@""];
-    self.log.text = [NSString stringWithString:@""];
+    self.display.text = [NSString stringWithString:@""]; // why not just "self.display.text = @"";"?
+    self.log.text = [NSString stringWithString:@""];	// Same?
 }
 
 
@@ -93,12 +102,14 @@ typedef enum{
 //tag property is defined as corresponding number
 - (IBAction)digitPressed:(UIButton *)sender {
     
-    NSString *digitPressed = [NSString stringWithFormat:@"%d", sender.tag];
+    NSString *digitPressed = [NSString stringWithFormat:@"%d", sender.tag]; // I guess tag allows for easier localization...
     
+    
+    // Why are you not useing the "userInTheMiddleOfEnteringANymber"??
     // Handle Dot
     if (sender.tag == DIGIT_DOT && [self.display.text rangeOfString:@"."].location == NSNotFound){
         self.userIsInTheMiddleOfEnteringANumber = YES;
-        if (self.display.text.length == 0) {
+        if (self.display.text.length == 0) {		// What if the display is showing "0", the default? Length will be 1
             self.display.text = @"0.";
         }
         else {
@@ -106,6 +117,8 @@ typedef enum{
                                  ,self.display.text
                                  ,@"."
                                  ];
+            // try         self.display.text = [self.display.text stringByAppendingString:@"."]; -- much more readable
+
         }
         
     }
@@ -129,6 +142,12 @@ typedef enum{
 // entre is not pressed, during user is entering a number
 // Entre logic should be here
 - (void)displayHandlerWithoutEnter:(NSString *) operator{
+    
+    // Is this for updating the brainInputDisplay? I don't get this...
+    // the brainInputDisplay should only get updated WHEN you press enter OR an operation. Just typing
+    // digits will not update it at all, UNTIL they press Enter. Again, it shoudl show waht is being sent to the brain
+    // This is way unreadable code. Hint 6, and evaluation part of the assignement - you did not follow either
+    
     
     // for two operands operation
     if ([operator isEqualToString:@"+"] 
@@ -188,7 +207,7 @@ typedef enum{
     
 }
 
-
+// There should only be one method for the operations. While this will work, see what I said about hint 6
 - (IBAction)operationPressed:(UIButton *)sender {    
     
     //Handle Display
@@ -281,7 +300,8 @@ typedef enum{
     
     switch (sender.tag) {
         case FUNC_BACKWARD:{
-            
+            // Backspace should ONLY work when userIsInTheMiddleOfEnteringANumber is true, and you should NOT be
+            // updating anything in the brain. This is badly coded here and very confusing
             [self.calLogic pushInStack:self.display.text];
             //Handle UI
             if ([self.display.text length] > 0){
@@ -299,7 +319,7 @@ typedef enum{
             self.log.text = [NSString stringWithString:@""];
             
             //Handle logic
-            [self.calLogic clearOperand];
+            [self.calLogic clearOperand];	// Nope, clear ALL operands, clear brain!
             break;
         }
             
